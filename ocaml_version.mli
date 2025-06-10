@@ -445,6 +445,9 @@ module Releases : sig
   (** [all] is an enumeration of all the OCaml releases, with the latest patch versions in
       each major and minor release. *)
 
+  val oxcaml : t list
+  (** [oxcaml] is a list of Oxcaml compilers. *)
+
   val unreleased_betas : t list
   (** Enumerates the latest alpha / beta / release-candidate versions for each {i
       unreleased} minor OCaml series. *)
@@ -540,6 +543,7 @@ module Configure_options : sig
     | `Domains
     | `Effects
     | `Flambda
+    | `Flambda2
     | `Force_safe_string
     | `Frame_pointer
     | `Multicore
@@ -579,6 +583,9 @@ module Configure_options : sig
 
   val is_multicore : t -> bool
   (** [is_multicore t] is [true] if this version is a multicore-capable release. *)
+
+  val is_oxcaml : t -> bool
+  (** [is_oxcaml t] is [true] if this version is an oxcaml release. *)
 end
 
 val compiler_variants : arch -> t -> t list

@@ -249,6 +249,7 @@ module Releases = struct
 
   let latest = v5_3
 
+  let oxcaml = [ of_string_exn "5.2.0+flambda2" ]
   let unreleased_betas = [ of_string_exn "5.4.0~alpha1" ]
   let dev = [ v5_4; v5_5 ]
 
@@ -388,6 +389,7 @@ module Configure_options = struct
     | `Domains
     | `Effects
     | `Flambda
+    | `Flambda2
     | `Force_safe_string
     | `Frame_pointer
     | `Multicore
@@ -399,6 +401,7 @@ module Configure_options = struct
     match t with
     | `Afl -> "AFL (fuzzing) support"
     | `Flambda -> "flambda inlining"
+    | `Flambda2 -> "experimental performance focused version of OCaml"
     | `Default_unsafe_string -> "default to unsafe strings"
     | `Domains -> "experimental multicore parallelism"
     | `Effects -> "experimental multicore parallelism and effects-based concurrency"
@@ -414,6 +417,7 @@ module Configure_options = struct
     match t with
     | `Afl -> "afl"
     | `Flambda -> "flambda"
+    | `Flambda2 -> "flambda2"
     | `Default_unsafe_string -> "default-unsafe-string"
     | `Domains -> "domains"
     | `Effects -> "effects"
@@ -428,6 +432,7 @@ module Configure_options = struct
   let of_string = function
     | "afl" -> Some `Afl
     | "flambda" -> Some `Flambda
+    | "flambda2" -> Some `Flambda2
     | "default-unsafe-string" -> Some `Default_unsafe_string
     | "domains" -> Some `Domains
     | "effects" -> Some `Effects
@@ -491,6 +496,7 @@ module Configure_options = struct
       match o with
       | `Afl -> "--with-afl"
       | `Flambda -> "--enable-flambda"
+      | `Flambda2 -> "--enable-middle-end=flambda2"
       | `Default_unsafe_string -> "--enable-default-unsafe-string"
       | `Force_safe_string -> "--force-safe-string"
       | `Frame_pointer -> "--enable-frame-pointers"
@@ -510,6 +516,10 @@ module Configure_options = struct
   let is_multicore t =
     of_t_exn t |>
     List.exists (function |`Multicore |`Domains -> true |_ -> false)
+
+  let is_oxcaml t =
+    of_t_exn t |>
+    List.exists (function |`Flambda2 -> true | _ -> false)
 
 end
 
@@ -611,6 +621,8 @@ module Opam = struct
             (* multicore fork packages are at the lowest patch version *)
             if Configure_options.is_multicore t then
               with_patch t (Some 0)
+            else if Configure_options.is_oxcaml t then
+              with_variant t (Some "flambda2")
             else if Has.options_packages t then
               with_variant t (Some "options")
             else
@@ -621,7 +633,7 @@ module Opam = struct
       | None -> ("ocaml-base-compiler", to_string t)
 
     let additional_packages t =
-      if Has.options_packages t && not (Configure_options.is_multicore t) then
+      if Has.options_packages t && not (Configure_options.is_multicore t || Configure_options.is_oxcaml t) then
         match Configure_options.of_t t with
         | Ok []
         | Error _ -> []
